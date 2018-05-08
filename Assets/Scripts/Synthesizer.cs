@@ -26,6 +26,8 @@ public class Synthesizer : MonoBehaviour {
     double phase;
     double increment;
 
+    float noise;
+
     bool isActive = false;
 
     [SerializeField] WaveType waveType = WaveType.Sine;
@@ -97,6 +99,15 @@ public class Synthesizer : MonoBehaviour {
             frequency = NoteToFrequency(72);
             isActive = true;
         }
+
+        if(isActive && waveType == WaveType.Noise)
+        {
+            noise = Random.Range(-1f, 1f);
+        }
+        else
+        {
+            noise = 0f;
+        }
     }
 
     private void OnAudioFilterRead(float[] data, int channels)
@@ -139,7 +150,7 @@ public class Synthesizer : MonoBehaviour {
                         break;
 
                     case WaveType.Sawtooth:
-
+                        //data[i + j] = 
                         break;
 
                     case WaveType.Triangle:
@@ -147,7 +158,7 @@ public class Synthesizer : MonoBehaviour {
                         break;
 
                     case WaveType.Noise:
-
+                        data[i + j] = gain * noise;
                         break;
 
                     default:
