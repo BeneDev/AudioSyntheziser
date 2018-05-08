@@ -25,6 +25,7 @@ public class Synthesizer : MonoBehaviour {
     private float sampleRate;
     double phase;
     double increment;
+    float sawtoothValue = 0f;
 
     System.Random random = new System.Random();
 
@@ -99,6 +100,12 @@ public class Synthesizer : MonoBehaviour {
             frequency = NoteToFrequency(72);
             isActive = true;
         }
+
+        if (Input.GetKey(KeyCode.L))
+        {
+            frequency = NoteToFrequency(74);
+            isActive = true;
+        }
     }
 
     private void OnAudioFilterRead(float[] data, int channels)
@@ -141,15 +148,15 @@ public class Synthesizer : MonoBehaviour {
                         break;
 
                     case WaveType.Sawtooth:
-                        //data[i + j] = 
+                        data[i + j] = gain * (Mathf.InverseLerp(Mathf.PI * 2, 0, (float)phase) * 2 - 1);
                         break;
 
                     case WaveType.Triangle:
-
+                        data[i + j] = gain * (Mathf.PingPong((float)phase, 1f) * 2 - 1);
                         break;
 
                     case WaveType.Noise:
-                        data[i + j] = gain * (float)random.NextDouble();
+                        data[i + j] = gain * (((float)random.NextDouble() * 2f) -1);
                         break;
 
                     default:
