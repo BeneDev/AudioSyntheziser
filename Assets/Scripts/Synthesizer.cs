@@ -26,7 +26,7 @@ public class Synthesizer : MonoBehaviour {
     double phase;
     double increment;
 
-    float noise;
+    System.Random random = new System.Random();
 
     bool isActive = false;
 
@@ -99,15 +99,6 @@ public class Synthesizer : MonoBehaviour {
             frequency = NoteToFrequency(72);
             isActive = true;
         }
-
-        if(isActive && waveType == WaveType.Noise)
-        {
-            noise = Random.Range(-1f, 1f);
-        }
-        else
-        {
-            noise = 0f;
-        }
     }
 
     private void OnAudioFilterRead(float[] data, int channels)
@@ -158,7 +149,7 @@ public class Synthesizer : MonoBehaviour {
                         break;
 
                     case WaveType.Noise:
-                        data[i + j] = gain * noise;
+                        data[i + j] = gain * (float)random.NextDouble();
                         break;
 
                     default:
