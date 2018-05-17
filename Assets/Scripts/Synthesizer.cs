@@ -8,13 +8,7 @@ public class Synthesizer : MonoBehaviour {
 
     public class Voice
     {
-        public bool IsActive
-        {
-            get
-            {
-                return isActive;
-            }
-        }
+        public bool IsActive { get { return isActive; } }
 
         private int noteNumber;
         private float velocity;
@@ -25,20 +19,20 @@ public class Synthesizer : MonoBehaviour {
         double phase;
         double increment;
 
-        System.Random random = new System.Random();
+        private System.Random random = new System.Random();
 
-        [SerializeField] WaveType waveType;
+        private WaveType waveType;
 
-        private bool isActive;
+        bool isActive;
 
-        public Voice(WaveType wavetype, float gain)
+        public Voice(WaveType waveType, float gain)
         {
             noteNumber = -1;
             velocity = 0;
 
             isActive = false;
 
-            this.waveType = wavetype;
+            this.waveType = waveType;
             this.gain = gain;
         }
 
@@ -56,7 +50,7 @@ public class Synthesizer : MonoBehaviour {
 
         public void NoteOff(int noteNumber)
         {
-            if(noteNumber == this.noteNumber)
+            if (noteNumber == this.noteNumber)
             {
                 isActive = false;
             }
@@ -68,54 +62,54 @@ public class Synthesizer : MonoBehaviour {
 
             increment = frequency * 2 * Mathf.PI / sampleRate;
 
-            // Write audio buffer
-
+            // write audio buffer
             for (int i = 0; i < data.Length; i += channels)
             {
                 phase += increment;
+
                 if (phase > (Mathf.PI * 2))
                 {
                     phase -= Mathf.PI * 2;
                 }
 
-                for (int j = 0; j < channels; j++)
+                for (int c = 0; c < channels; c++)
                 {
                     switch (waveType)
                     {
                         case WaveType.Sine:
-                            data[i + j] += gain * Mathf.Sin((float)phase);
+                            data[i + c] += gain * Mathf.Sin((float)phase);
                             break;
 
                         case WaveType.Square:
                             if (Mathf.Sin((float)phase) >= 0)
                             {
-                                data[i + j] += gain;
+                                data[i + c] += gain;
                             }
                             else
                             {
-                                data[i + j] += -gain;
+                                data[i + c] += -gain;
                             }
                             break;
 
-                        case WaveType.Sawtooth:
-                            data[i + j] += gain * (Mathf.InverseLerp(Mathf.PI * 2, 0, (float)phase) * 2 - 1);
+                        case WaveType.Triangle:
+                            data[i + c] += gain * (Mathf.PingPong((float)phase, 1f) * 2f - 1f);
                             break;
 
-                        case WaveType.Triangle:
-                            data[i + j] += gain * (Mathf.PingPong((float)phase, 1f) * 2 - 1);
+                        case WaveType.Sawtooth:
+                            data[i + c] += gain * (Mathf.InverseLerp(0, Mathf.PI * 2, (float)phase) * 2 - 1f);
                             break;
 
                         case WaveType.Noise:
-                            data[i + j] += gain * (((float)random.NextDouble() * 2f) - 1);
+                            data[i + c] += gain * (((float)random.NextDouble() * 2f) - 1f);
                             break;
 
                         default:
                             break;
                     }
                 }
+
             }
         }
-
     }
 
     #endregion
@@ -124,8 +118,8 @@ public class Synthesizer : MonoBehaviour {
     {
         Sine,
         Square,
-        Sawtooth,
         Triangle,
+        Sawtooth,
         Noise
     }
 
@@ -137,34 +131,41 @@ public class Synthesizer : MonoBehaviour {
 
     #endregion
 
-    #region Fields
 
-    [SerializeField] WaveType waveType = WaveType.Sine;
-    [SerializeField, Range(0, 1)] float gain = 1f;
-    [SerializeField] int transpose = 0;
-    private int octave;
+    #region Private Fields
+
+    private NoteInput input;
+
+    [SerializeField]
+    private WaveType waveType = WaveType.Sine;
+
+    [SerializeField, Range(0, 1f)]
+    private float gain = 1f;
+
+    [SerializeField]
+    private int transpose = 0;
+    private int octave = 0;
 
     private Voice[] voicesPool;
     private List<Voice> activeVoices;
     private Stack<Voice> freeVoices;
     private Dictionary<int, Voice> noteDict;
-    
-    private NoteInput noteInput;
 
     #endregion
+
 
     #region Unity Messages
 
     private void Awake()
     {
-        noteInput = GetComponent<NoteInput>();
+        input = GetComponent<NoteInput>();
 
         voicesPool = new Voice[polyphony];
         activeVoices = new List<Voice>();
         freeVoices = new Stack<Voice>();
         noteDict = new Dictionary<int, Voice>();
 
-        for(int i = 0; i < voicesPool.Length; i++)
+        for (int i = 0; i < voicesPool.Length; i++)
         {
             voicesPool[i] = new Voice(waveType, gain);
             freeVoices.Push(voicesPool[i]);
@@ -173,67 +174,75 @@ public class Synthesizer : MonoBehaviour {
 
     private void OnEnable()
     {
-        if(noteInput != null)
+        if (input != null)
         {
-            noteInput.OnNoteOn -= Input_OnNoteOn;
-            noteInput.OnNoteOn += Input_OnNoteOn;
+            input.OnNoteOn -= Input_OnNoteOn;
+            input.OnNoteOn += Input_OnNoteOn;
 
-            noteInput.OnNoteOff -= Input_OnNoteOff;
-            noteInput.OnNoteOff += Input_OnNoteOff;
+            input.OnNoteOff -= Input_OnNoteOff;
+            input.OnNoteOff += Input_OnNoteOff;
         }
     }
 
+
     private void OnDisable()
     {
-        if(noteInput != null)
+        if (input != null)
         {
-            noteInput.OnNoteOn -= Input_OnNoteOn;
-            noteInput.OnNoteOff -= Input_OnNoteOff;
+            input.OnNoteOn -= Input_OnNoteOn;
+
+            input.OnNoteOff -= Input_OnNoteOff;
         }
     }
 
     private void OnAudioFilterRead(float[] data, int channels)
     {
-        for(int i = 0; i < data.Length; i++)
+        for (int i = 0; i < data.Length; i++)
         {
             data[i] = 0;
         }
 
-        for (int i = activeVoices.Count -1; i < 0; i--)
+        for (int i = activeVoices.Count - 1; i >= 0; i--)
         {
             activeVoices[i].WriteAudioBuffer(ref data, channels);
-            if(!activeVoices[i].IsActive)
+            if (activeVoices[i].IsActive == false)
             {
                 freeVoices.Push(activeVoices[i]);
                 activeVoices.RemoveAt(i);
             }
         }
 
-        //TODO ? (Unknown challenge)
+        // TODO: ?
     }
 
     #endregion
 
-# region Static Public Functions
+
+    #region Static Public Functions
+
     static public float NoteToFrequency(int noteNumber)
     {
         float twelfthRoot = Mathf.Pow(2f, (1f / 12f));
         return fixedFrequency * Mathf.Pow(twelfthRoot, noteNumber - fixedNoteNumber);
     }
+
     #endregion
+
 
     #region Event Handler
 
-    void Input_OnNoteOn(int noteNumber, float velocity)
+    private void Input_OnNoteOn(int noteNumber, float velocity)
     {
         noteNumber += transpose + 12 * octave;
 
-        if(noteDict.ContainsKey(noteNumber))
+        Debug.LogFormat("NoteOn: {0}", noteNumber);
+
+        if (noteDict.ContainsKey(noteNumber))
         {
             return;
         }
 
-        if(freeVoices.Count > 0)
+        if (freeVoices.Count > 0)
         {
             Voice voice = freeVoices.Pop();
             voice.NoteOn(noteNumber, velocity);
@@ -242,16 +251,17 @@ public class Synthesizer : MonoBehaviour {
         }
     }
 
-    void Input_OnNoteOff(int noteNumber)
+    private void Input_OnNoteOff(int noteNumber)
     {
         noteNumber += transpose + 12 * octave;
+
+        Debug.LogFormat("NoteOff: {0}", noteNumber);
 
         if (noteDict.ContainsKey(noteNumber))
         {
             noteDict[noteNumber].NoteOff(noteNumber);
             noteDict.Remove(noteNumber);
         }
-        
     }
 
     #endregion

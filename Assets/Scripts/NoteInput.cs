@@ -17,6 +17,12 @@ public class NoteInput : MonoBehaviour {
 
     Dictionary<KeyCode, int> virtualKeysDict;
 
+    [SerializeField] int noteStart = 50;
+
+    [SerializeField] int step = 1;
+
+    [SerializeField] float deltaTime = 0.5f;
+
     #endregion
 
     #region Unity Messages
@@ -37,6 +43,14 @@ public class NoteInput : MonoBehaviour {
         virtualKeysDict.Add(KeyCode.U, 61); // A#
         virtualKeysDict.Add(KeyCode.J, 62); // B
         virtualKeysDict.Add(KeyCode.K, 63); // C
+        virtualKeysDict.Add(KeyCode.I, 64); // C#
+        virtualKeysDict.Add(KeyCode.L, 65); // D
+        virtualKeysDict.Add(KeyCode.O, 66); // D#
+    }
+
+    private void Start()
+    {
+        //StartCoroutine(Arpeggiator());
     }
 
     private void Update()
@@ -62,5 +76,26 @@ public class NoteInput : MonoBehaviour {
     }
 
     #endregion
+
+    // Simple Sequencer
+    IEnumerator Arpeggiator()
+    {
+        int noteNumber = noteStart;
+
+        while(true)
+        {
+            if (OnNoteOff != null)
+            {
+                OnNoteOff(noteNumber);
+            }
+
+            if (OnNoteOn != null)
+            {
+                OnNoteOn(noteNumber += step, 1f);
+            }
+
+            yield return new WaitForSeconds(deltaTime);
+        }
+    }
 
 }
