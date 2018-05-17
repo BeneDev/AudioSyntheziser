@@ -123,6 +123,7 @@ GameObject:
   - component: {fileID: 331124303}
   - component: {fileID: 331124305}
   - component: {fileID: 331124304}
+  - component: {fileID: 331124306}
   m_Layer: 0
   m_Name: Synthesizer
   m_TagString: Untagged
@@ -156,7 +157,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   waveType: 0
   frequency: 440
-  gain: 1
+  gain: 0.51
 --- !u!82 &331124305
 AudioSource:
   m_ObjectHideFlags: 0
@@ -237,6 +238,17 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 0
+--- !u!114 &331124306
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 331124302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3502e5cfe43a22240b3e56ae86e2a949, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1069608346
 GameObject:
   m_ObjectHideFlags: 0

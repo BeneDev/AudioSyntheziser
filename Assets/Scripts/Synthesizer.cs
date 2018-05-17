@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Synthesizer : MonoBehaviour {
 
+    private NoteInput noteInput;
+
     enum WaveType
     {
         Sine,
@@ -30,6 +32,7 @@ public class Synthesizer : MonoBehaviour {
     System.Random random = new System.Random();
 
     bool isActive = false;
+    private int activeNoteNumber = -1;
 
     [SerializeField] WaveType waveType = WaveType.Sine;
 
@@ -46,65 +49,27 @@ public class Synthesizer : MonoBehaviour {
     private void Awake()
     {
         sampleRate = (float)AudioSettings.outputSampleRate;
+        noteInput = GetComponent<NoteInput>();
     }
 
-    private void Update()
+    private void OnEnable()
     {
-
-        isActive = false;
-
-        if(Input.GetKey(KeyCode.A))
+        if(noteInput != null)
         {
-            frequency = NoteToFrequency(60);
-            isActive = true;
+            noteInput.OnNoteOn -= Input_OnNoteOn;
+            noteInput.OnNoteOn += Input_OnNoteOn;
+
+            noteInput.OnNoteOff -= Input_OnNoteOff;
+            noteInput.OnNoteOff += Input_OnNoteOff;
         }
+    }
 
-        if (Input.GetKey(KeyCode.S))
+    private void OnDisable()
+    {
+        if(noteInput != null)
         {
-            frequency = NoteToFrequency(62);
-            isActive = true;
-        }
-
-        if (Input.GetKey(KeyCode.D))
-        {
-            frequency = NoteToFrequency(64);
-            isActive = true;
-        }
-
-        if (Input.GetKey(KeyCode.F))
-        {
-            frequency = NoteToFrequency(65);
-            isActive = true;
-        }
-
-        if (Input.GetKey(KeyCode.G))
-        {
-            frequency = NoteToFrequency(67);
-            isActive = true;
-        }
-
-        if (Input.GetKey(KeyCode.H))
-        {
-            frequency = NoteToFrequency(69);
-            isActive = true;
-        }
-
-        if (Input.GetKey(KeyCode.J))
-        {
-            frequency = NoteToFrequency(71);
-            isActive = true;
-        }
-
-        if (Input.GetKey(KeyCode.K))
-        {
-            frequency = NoteToFrequency(72);
-            isActive = true;
-        }
-
-        if (Input.GetKey(KeyCode.L))
-        {
-            frequency = NoteToFrequency(74);
-            isActive = true;
+            noteInput.OnNoteOn -= Input_OnNoteOn;
+            noteInput.OnNoteOff -= Input_OnNoteOff;
         }
     }
 
@@ -175,6 +140,27 @@ public class Synthesizer : MonoBehaviour {
         float twelfthRoot = Mathf.Pow(2f, (1f / 12f));
         return fixedFrequency * Mathf.Pow(twelfthRoot, noteNumber - fixedNoteNumber);
     }
-#endregion
+    #endregion
+
+    #region
+
+    void Input_OnNoteOn(int noteNumber, float velocity)
+    {
+        Debug.LogFormat("On {0}", noteNumber);
+        isActive = true;
+        activeNoteNumber = noteNumber;
+        frequency = NoteToFrequency(noteNumber);
+    }
+
+    void Input_OnNoteOff(int noteNumber)
+    {
+        if (noteNumber == activeNoteNumber)
+        {
+            isActive = false;
+        }
+        Debug.LogFormat("Off {0}", noteNumber);
+    }
+
+    #endregion
 
 }
