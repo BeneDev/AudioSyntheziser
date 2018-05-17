@@ -4,9 +4,114 @@ using UnityEngine;
 
 public class Synthesizer : MonoBehaviour {
 
-    private NoteInput noteInput;
+    #region Classes
 
-    enum WaveType
+    public class Voice
+    {
+        public int noteNumber;
+        public float velocity;
+
+        float frequency;
+        float gain;
+        float sampleRate;
+        double phase;
+        double increment;
+
+        System.Random random = new System.Random();
+
+        [SerializeField] WaveType waveType;
+
+        bool isActive;
+
+        public Voice(WaveType wavetype)
+        {
+            noteNumber = -1;
+            velocity = 0;
+
+            isActive = false;
+
+            this.waveType = wavetype;
+        }
+
+        public void NoteOn(int noteNumber, float velocity)
+        {
+            this.noteNumber = noteNumber;
+            this.velocity = velocity;
+            this.frequency = Synthesizer.NoteToFrequency(noteNumber);
+
+            phase = 0;
+            sampleRate = AudioSettings.outputSampleRate;
+
+            isActive = true;
+        }
+
+        public void NoteOff(int noteNumber)
+        {
+            if(noteNumber == this.noteNumber)
+            {
+                isActive = false;
+            }
+        }
+
+        public void WriteAudioBuffer(ref float[] data, int channels)
+        {
+            if (!isActive) return;
+
+            increment = frequency * 2 * Mathf.PI / sampleRate;
+
+            // Write audio buffer
+
+            for (int i = 0; i < data.Length; i += channels)
+            {
+                phase += increment;
+                if (phase > (Mathf.PI * 2))
+                {
+                    phase -= Mathf.PI * 2;
+                }
+
+                for (int j = 0; j < channels; j++)
+                {
+                    switch (waveType)
+                    {
+                        case WaveType.Sine:
+                            data[i + j] = gain * Mathf.Sin((float)phase);
+                            break;
+
+                        case WaveType.Square:
+                            if (Mathf.Sin((float)phase) >= 0)
+                            {
+                                data[i + j] = gain;
+                            }
+                            else
+                            {
+                                data[i + j] = -gain;
+                            }
+                            break;
+
+                        case WaveType.Sawtooth:
+                            data[i + j] = gain * (Mathf.InverseLerp(Mathf.PI * 2, 0, (float)phase) * 2 - 1);
+                            break;
+
+                        case WaveType.Triangle:
+                            data[i + j] = gain * (Mathf.PingPong((float)phase, 1f) * 2 - 1);
+                            break;
+
+                        case WaveType.Noise:
+                            data[i + j] = gain * (((float)random.NextDouble() * 2f) - 1);
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+
+    }
+
+    #endregion
+
+    public enum WaveType
     {
         Sine,
         Square,
@@ -36,7 +141,9 @@ public class Synthesizer : MonoBehaviour {
 
     [SerializeField] WaveType waveType = WaveType.Sine;
 
-    [SerializeField, Range(220f, 880f)] float frequency = 440f;
+    float frequency = 440f;
+
+    private NoteInput noteInput;
 
     [SerializeField, Range(0, 10)] float gain = 1f;
 
@@ -142,14 +249,13 @@ public class Synthesizer : MonoBehaviour {
     }
     #endregion
 
-    #region
+    #region Event Handler
 
     void Input_OnNoteOn(int noteNumber, float velocity)
     {
-        Debug.LogFormat("On {0}", noteNumber);
+        frequency = NoteToFrequency(noteNumber);
         isActive = true;
         activeNoteNumber = noteNumber;
-        frequency = NoteToFrequency(noteNumber);
     }
 
     void Input_OnNoteOff(int noteNumber)
@@ -158,7 +264,6 @@ public class Synthesizer : MonoBehaviour {
         {
             isActive = false;
         }
-        Debug.LogFormat("Off {0}", noteNumber);
     }
 
     #endregion
